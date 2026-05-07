@@ -36,3 +36,29 @@ def test_get_session_not_found():
         client = TestClient(app)
         response = client.get("/api/sessions/nonexistent")
         assert response.status_code == 404
+
+
+def test_submit_answer_returns_processing():
+    sample_state = SessionState(
+        session_id="s1", topic="Science", question_count=3,
+        questions=[Question(text="Q1?", difficulty="easy", expected_outline="o1")],
+        status="questioning", current_index=0,
+        created_at="t", updated_at="t",
+    )
+    with patch("api.sessions.load_session", new_callable=AsyncMock, return_value=sample_state):
+        with patch("api.sessions.save_session", new_callable=AsyncMock):
+            app = _make_app()
+            # Pre-create the queue so background task has somewhere to emit
+            _session_queues["s1"] = asyncio.Queue()
+            client = TestClient(app)
+            response = client.post("/api/sessions/s1/answer", json={"answer": "my answer"})
+            assert response.status_code == 200
+            assert response.json()["status"] == "processing"
+
+
+def test_submit_answer_404_on_missing_session():
+    with patch("api.sessions.load_session", new_callable=AsyncMock, return_value=None):
+        app = _make_app()
+        client = TestClient(app)
+        response = client.post("/api/sessions/missing/answer", json={"answer": "hi"})
+        assert response.status_code == 404
