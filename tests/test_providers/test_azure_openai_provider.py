@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from providers.azure_openai_provider import AzureOpenAIProvider
 from providers.base import ProviderResponse
 
@@ -21,7 +21,7 @@ async def test_complete_returns_text(provider):
     mock_response = MagicMock()
     mock_response.choices = [mock_choice]
 
-    with patch.object(provider.client.chat.completions, "create", return_value=mock_response):
+    with patch.object(provider.client.chat.completions, "create", new_callable=AsyncMock, return_value=mock_response):
         result = await provider.complete(
             messages=[{"role": "user", "content": "evaluate"}],
             system="You are evaluator.",
@@ -38,7 +38,7 @@ async def test_system_prepended_as_message(provider):
     mock_response = MagicMock()
     mock_response.choices = [mock_choice]
 
-    with patch.object(provider.client.chat.completions, "create", return_value=mock_response) as mock_create:
+    with patch.object(provider.client.chat.completions, "create", new_callable=AsyncMock, return_value=mock_response) as mock_create:
         await provider.complete(
             messages=[{"role": "user", "content": "hi"}],
             system="Be helpful.",

@@ -6,7 +6,7 @@ class AnthropicProvider(ModelProvider):
     """Anthropic provider for specialist agents (no adaptive thinking — use direct SDK for Orchestrator)."""
 
     def __init__(self, api_key: str, model: str) -> None:
-        self.client = anthropic.Anthropic(api_key=api_key)
+        self.client = anthropic.AsyncAnthropic(api_key=api_key)
         self.model = model
 
     async def complete(
@@ -29,7 +29,7 @@ class AnthropicProvider(ModelProvider):
         if tools:
             create_kwargs["tools"] = tools
 
-        response = self.client.messages.create(**create_kwargs)
+        response = await self.client.messages.create(**create_kwargs)
 
         text_content = ""
         tool_calls: list[ToolCall] = []

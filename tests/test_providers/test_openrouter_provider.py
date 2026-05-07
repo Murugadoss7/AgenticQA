@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from providers.openrouter_provider import OpenRouterProvider
 from providers.base import ProviderResponse
 
@@ -15,7 +15,7 @@ async def test_complete_returns_text(provider):
     mock_response = MagicMock()
     mock_response.choices = [mock_choice]
 
-    with patch.object(provider.client.chat.completions, "create", return_value=mock_response):
+    with patch.object(provider.client.chat.completions, "create", new_callable=AsyncMock, return_value=mock_response):
         result = await provider.complete(
             messages=[{"role": "user", "content": "advise"}],
             system="You are advisor.",
@@ -23,3 +23,12 @@ async def test_complete_returns_text(provider):
 
     assert '{"next_topics"' in result.content
     assert result.tool_calls == []
+
+
+async def test_tools_raises(provider):
+    with pytest.raises(ValueError, match="tool"):
+        await provider.complete(
+            messages=[{"role": "user", "content": "hi"}],
+            system="sys",
+            tools=[{"name": "some_tool", "input_schema": {}}],
+        )

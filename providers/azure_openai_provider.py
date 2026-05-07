@@ -1,11 +1,11 @@
 import json
-from openai import AzureOpenAI
+from openai import AsyncAzureOpenAI
 from providers.base import ModelProvider, ProviderResponse, ToolCall
 
 
 class AzureOpenAIProvider(ModelProvider):
     def __init__(self, api_key: str, endpoint: str, api_version: str, model: str) -> None:
-        self.client = AzureOpenAI(
+        self.client = AsyncAzureOpenAI(
             api_key=api_key, azure_endpoint=endpoint, api_version=api_version
         )
         self.model = model
@@ -26,18 +26,20 @@ class AzureOpenAIProvider(ModelProvider):
         }
         if tools:
             create_kwargs["tools"] = self._convert_tools(tools)
-            create_kwargs.pop("response_format")  # can't combine with tool_choice
+            create_kwargs.pop("response_format")
 
-        response = self.client.chat.completions.create(**create_kwargs)
+        response = await self.client.chat.completions.create(**create_kwargs)
         message = response.choices[0].message
 
         content = message.content or ""
         tool_calls: list[ToolCall] = []
         if message.tool_calls:
             for tc in message.tool_calls:
-                tool_calls.append(
-                    ToolCall(id=tc.id, name=tc.function.name, input=json.loads(tc.function.arguments))
-                )
+                try:
+                    args = json.loads(tc.function.arguments)
+                except json.JSONDecodeError:
+                    args = {}
+                tool_calls.append(ToolCall(id=tc.id, name=tc.function.name, input=args))
 
         return ProviderResponse(content=content, tool_calls=tool_calls)
 
