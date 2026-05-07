@@ -1,37 +1,10 @@
-# Python
+﻿.venv/
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-*.pyd
-*.egg
+.pytest_cache/
+sessions/
+.env
 *.egg-info/
 dist/
 build/
-*.whl
-
-# Virtual environments
-venv/
-.venv/
-env/
-.env/
-
-# Environment variables
-.env
-
-# Sessions / runtime data
-sessions/
-
-# Pytest
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
