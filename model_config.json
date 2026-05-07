@@ -1,0 +1,15 @@
+{
+  "providers": {
+    "anthropic":    { "api_key": "${ANTHROPIC_API_KEY}" },
+    "azure_openai": { "api_key": "${AZURE_OPENAI_API_KEY}", "endpoint": "${AZURE_OPENAI_ENDPOINT}", "api_version": "2024-02-01" },
+    "ollama":       { "base_url": "http://localhost:11434" },
+    "openrouter":   { "api_key": "${OPENROUTER_API_KEY}" }
+  },
+  "agents": {
+    "orchestrator":       { "provider": "anthropic",    "model": "claude-opus-4-7" },
+    "question_generator": { "provider": "anthropic",    "model": "claude-sonnet-4-6" },
+    "evaluator":          { "provider": "anthropic",    "model": "claude-haiku-4-5" },
+    "analyzer":           { "provider": "anthropic",    "model": "claude-haiku-4-5" },
+    "advisor":            { "provider": "anthropic",    "model": "claude-haiku-4-5" }
+  }
+}
