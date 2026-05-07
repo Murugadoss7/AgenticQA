@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizMind</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Screen 1: Topic Selection -->
+  <div id="screen-select" class="screen active">
+    <nav class="nav">🧠 QuizMind</nav>
+    <div class="container">
+      <h1>Choose a Topic</h1>
+      <div id="topic-chips" class="chips"></div>
+      <div class="divider">— or type your own —</div>
+      <input id="custom-topic" class="input" placeholder="Custom topic…" type="text">
+      <div class="label">Questions per session:</div>
+      <div class="count-picker">
+        <button class="count-btn" data-count="3">3</button>
+        <button class="count-btn active" data-count="5">5</button>
+        <button class="count-btn" data-count="10">10</button>
+      </div>
+      <button id="start-btn" class="btn primary" disabled>Start Session →</button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Q&A Session -->
+  <div id="screen-qa" class="screen">
+    <nav class="nav">
+      <span id="qa-topic-label"></span>
+      <span id="qa-progress"></span>
+    </nav>
+    <div class="container">
+      <div id="prev-result" class="result-card hidden"></div>
+      <div id="question-card" class="question-card">
+        <div id="question-text"></div>
+        <div id="difficulty-badge" class="badge"></div>
+      </div>
+      <div id="agent-status" class="status hidden"></div>
+      <textarea id="answer-input" class="textarea" placeholder="Type your answer here…" rows="5"></textarea>
+      <button id="submit-btn" class="btn primary">Submit Answer →</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Results -->
+  <div id="screen-results" class="screen">
+    <nav class="nav">🧠 QuizMind — Results</nav>
+    <div class="container">
+      <div class="score-display">
+        <div id="overall-score" class="score-number"></div>
+        <div class="score-label">Overall Score</div>
+      </div>
+      <div class="section-title success">✓ Strengths</div>
+      <ul id="strengths-list" class="bullet-list"></ul>
+      <div class="section-title danger">✗ Weaknesses</div>
+      <ul id="weaknesses-list" class="bullet-list"></ul>
+      <div class="advisor-card">
+        <div class="advisor-title">🗺️ Next Steps</div>
+        <div id="advisor-message" class="advisor-message"></div>
+        <div class="label">Try next:</div>
+        <div id="next-topics" class="chips small"></div>
+        <div class="label">Focus on:</div>
+        <ul id="focus-areas" class="bullet-list small"></ul>
+      </div>
+      <button id="new-session-btn" class="btn primary">Start New Session →</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
