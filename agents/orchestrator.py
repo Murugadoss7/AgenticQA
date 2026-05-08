@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from typing import Callable, Awaitable
-import anthropic
+from openai import AzureOpenAI
 from models.session import SessionState, Question, Answer, Evaluation
 from agents.question_generator import QuestionGeneratorAgent
 from agents.evaluator import EvaluatorAgent
@@ -9,42 +9,54 @@ from agents.analyzer import AnalyzerAgent
 from agents.advisor import AdvisorAgent
 
 _SYSTEM = """You are the orchestrator of a Q&A learning platform. Inspect the session state and
-decide which action to take next by calling exactly one tool. Never generate questions or evaluations
-yourself — always delegate to the appropriate tool."""
+decide which action to take next by calling exactly one function. Never generate questions or evaluations
+yourself — always delegate to the appropriate function."""
 
 _TOOLS = [
     {
-        "name": "generate_questions",
-        "description": "Generate questions for the topic at the start of a session (status=selecting).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "topic": {"type": "string", "description": "The session topic"},
-                "count": {"type": "integer", "description": "Number of questions to generate"},
+        "type": "function",
+        "function": {
+            "name": "generate_questions",
+            "description": "Generate questions for the topic at the start of a session (status=selecting).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {"type": "string", "description": "The session topic"},
+                    "count": {"type": "integer", "description": "Number of questions to generate"},
+                },
+                "required": ["topic", "count"],
             },
-            "required": ["topic", "count"],
         },
     },
     {
-        "name": "evaluate_answer",
-        "description": "Evaluate the most recently submitted answer (status=questioning).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "question_index": {"type": "integer", "description": "Index of the question being answered"},
+        "type": "function",
+        "function": {
+            "name": "evaluate_answer",
+            "description": "Evaluate the most recently submitted answer (status=questioning).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question_index": {"type": "integer", "description": "Index of the question being answered"},
+                },
+                "required": ["question_index"],
             },
-            "required": ["question_index"],
         },
     },
     {
-        "name": "analyze_performance",
-        "description": "Analyze overall session performance after all answers are submitted.",
-        "input_schema": {"type": "object", "properties": {}},
+        "type": "function",
+        "function": {
+            "name": "analyze_performance",
+            "description": "Analyze overall session performance after all answers are submitted.",
+            "parameters": {"type": "object", "properties": {}},
+        },
     },
     {
-        "name": "recommend_next",
-        "description": "Recommend next topics and focus areas based on analysis results.",
-        "input_schema": {"type": "object", "properties": {}},
+        "type": "function",
+        "function": {
+            "name": "recommend_next",
+            "description": "Recommend next topics and focus areas based on analysis results.",
+            "parameters": {"type": "object", "properties": {}},
+        },
     },
 ]
 
@@ -55,6 +67,8 @@ class OrchestratorAgent:
     def __init__(
         self,
         api_key: str,
+        endpoint: str,
+        api_version: str,
         model: str,
         question_generator: QuestionGeneratorAgent,
         evaluator: EvaluatorAgent,
@@ -62,7 +76,7 @@ class OrchestratorAgent:
         advisor: AdvisorAgent,
         all_topics: list[str],
     ) -> None:
-        self.client = anthropic.Anthropic(api_key=api_key)
+        self.client = AzureOpenAI(api_key=api_key, azure_endpoint=endpoint, api_version=api_version)
         self.model = model
         self.question_generator = question_generator
         self.evaluator = evaluator
@@ -75,44 +89,35 @@ class OrchestratorAgent:
             if emit:
                 await emit(event, data)
 
-        messages: list[dict] = [{"role": "user", "content": self._state_summary(state)}]
-        system_block = [{"type": "text", "text": _SYSTEM, "cache_control": {"type": "ephemeral"}}]
+        messages: list[dict] = [
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": self._state_summary(state)},
+        ]
 
         while True:
-            response = self.client.messages.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=8192,
-                system=system_block,
-                tools=_TOOLS,
                 messages=messages,
-                thinking={"type": "adaptive"},
-                output_config={"effort": "high"},
+                tools=_TOOLS,
+                tool_choice="auto",
             )
 
-            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-            if not tool_use_blocks:
-                break  # Claude finished without calling a tool
+            msg = response.choices[0].message
+            tool_calls = msg.tool_calls or []
 
-            # Build assistant message preserving all content blocks
-            assistant_content = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    assistant_content.append(
-                        {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
-                    )
-                elif block.type == "text" and block.text:
-                    assistant_content.append({"type": "text", "text": block.text})
-            messages.append({"role": "assistant", "content": assistant_content})
+            if not tool_calls:
+                break
 
-            # Dispatch each tool and collect results
-            tool_results = []
-            for block in tool_use_blocks:
-                result = await self._dispatch(block.name, block.input, state, _emit)
-                tool_results.append(
-                    {"type": "tool_result", "tool_use_id": block.id, "content": json.dumps(result)}
-                )
+            messages.append(msg)
 
-            messages.append({"role": "user", "content": tool_results})
+            for tc in tool_calls:
+                tool_input = json.loads(tc.function.arguments)
+                result = await self._dispatch(tc.function.name, tool_input, state, _emit)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(result),
+                })
 
         return state
 

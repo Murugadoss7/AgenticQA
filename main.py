@@ -38,12 +38,20 @@ def startup() -> None:
     advisor = AdvisorAgent(provider=providers["advisor"])
 
     with open("model_config.json") as f:
-        orch_cfg = json.load(f)["agents"]["orchestrator"]
-    anthropic_api_key = os.environ["ANTHROPIC_API_KEY"]
+        cfg = json.load(f)
+    orch_agent = cfg["agents"]["orchestrator"]
+    orch_provider = cfg["providers"][orch_agent["provider"]]
+
+    def _resolve(v: str) -> str:
+        if v.startswith("${") and v.endswith("}"):
+            return os.environ[v[2:-1]]
+        return v
 
     orchestrator = OrchestratorAgent(
-        api_key=anthropic_api_key,
-        model=orch_cfg["model"],
+        api_key=_resolve(orch_provider["api_key"]),
+        endpoint=_resolve(orch_provider["endpoint"]),
+        api_version=orch_provider["api_version"],
+        model=orch_agent["model"],
         question_generator=question_generator,
         evaluator=evaluator,
         analyzer=analyzer,

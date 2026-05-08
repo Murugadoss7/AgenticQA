@@ -6,10 +6,10 @@
     "openrouter":   { "api_key": "${OPENROUTER_API_KEY}" }
   },
   "agents": {
-    "orchestrator":       { "provider": "anthropic",    "model": "claude-opus-4-7" },
-    "question_generator": { "provider": "anthropic",    "model": "claude-sonnet-4-6" },
-    "evaluator":          { "provider": "anthropic",    "model": "claude-haiku-4-5" },
-    "analyzer":           { "provider": "anthropic",    "model": "claude-haiku-4-5" },
-    "advisor":            { "provider": "anthropic",    "model": "claude-haiku-4-5" }
+    "orchestrator":       { "provider": "azure_openai", "model": "gpt-4o" },
+    "question_generator": { "provider": "azure_openai", "model": "gpt-4o" },
+    "evaluator":          { "provider": "azure_openai", "model": "gpt-4o-mini" },
+    "analyzer":           { "provider": "azure_openai", "model": "gpt-4o-mini" },
+    "advisor":            { "provider": "azure_openai", "model": "gpt-4o-mini" }
   }
 }
