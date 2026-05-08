@@ -13,11 +13,14 @@ TOOL_USE_PROVIDERS = {"anthropic", "azure_openai"}
 def _resolve(value: str) -> str:
     if value.startswith("${") and value.endswith("}"):
         env_var = value[2:-1]
-        resolved = os.environ.get(env_var, "")
-        if not resolved:
-            raise ValueError(f"Required environment variable '{env_var}' is not set")
-        return resolved
-    return value
+    elif value.startswith("$"):
+        env_var = value[1:]
+    else:
+        return value
+    resolved = os.environ.get(env_var, "")
+    if not resolved:
+        raise ValueError(f"Required environment variable '{env_var}' is not set")
+    return resolved
 
 
 def load_providers(config_path: str = "model_config.json") -> dict[str, ModelProvider]:
@@ -47,7 +50,7 @@ def load_providers(config_path: str = "model_config.json") -> dict[str, ModelPro
             providers[agent_name] = AzureOpenAIProvider(
                 api_key=_resolve(pcfg["api_key"]),
                 endpoint=_resolve(pcfg["endpoint"]),
-                api_version=pcfg["api_version"],
+                api_version=_resolve(pcfg["api_version"]),
                 model=model,
             )
         elif provider_name == "ollama":

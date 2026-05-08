@@ -45,6 +45,8 @@ def startup() -> None:
     def _resolve(v: str) -> str:
         if v.startswith("${") and v.endswith("}"):
             return os.environ[v[2:-1]]
+        if v.startswith("$"):
+            return os.environ[v[1:]]
         return v
 
     orchestrator = OrchestratorAgent(
